@@ -49,7 +49,7 @@
 
       <section class="actions">
         <el-button type="primary" @click="runAction('加载 SDK', loadSdkResources)">加载 SDK</el-button>
-        <el-button @click="runAction('初始化 SDK', initSdk)">初始化 SDK</el-button>
+        <el-button @click="runAction('初始化 SDK', () => initSdk(previewContainerId))">初始化 SDK</el-button>
         <el-button @click="runAction('登录设备', () => loginDevice(form))">登录设备</el-button>
         <el-button type="success" @click="runAction('开始预览', () => startPreview(form, previewContainerId))">开始预览</el-button>
         <el-button type="warning" @click="runAction('停止预览', stopPreview)">停止预览</el-button>

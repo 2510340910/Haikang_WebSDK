@@ -4,8 +4,8 @@
 
 - 原始海康 WebSDK Demo 使用 `nginx-1.28.0` 作为本地静态服务。
 - 当前新增的是 Vue3 + Vite 壳工程，用于后续逐步迁移 WebSDK Demo。
-- 本阶段只完成页面壳和桥接占位，不实现真实 WebSDK 预览逻辑。
-- 下一阶段再根据 `webs/cn/demo.html` 和 `webs/cn/demo.js` 迁移真实海康 WebSDK API。
+- 当前阶段已迁移原 `webs/cn/demo.js` 中可确认的最小实时预览链路：SDK 加载、SDK 初始化、登录 NVR、单路实时预览、停止预览、注销/释放。
+- 当前尚未迁移云台、回放、录像、抓图、OSD、设备维护等高级能力。
 - 当前测试设备是 NVR 下挂摄像头，数字通道为 `34`，不是 IPC 直连。
 
 ## 启动方式
@@ -24,3 +24,24 @@ http://localhost:5173
 ## 静态资源说明
 
 `vite.config.js` 使用 `publicDir: 'webs'`，让 Vite 直接把现有 `webs` 目录作为静态资源目录使用，避免复制 SDK 文件。
+
+## 已迁移的原 Demo API
+
+当前桥接层只使用原 Demo 中已经出现过的 WebSDK API：
+
+- `WebVideoCtrl.I_SupportNoPlugin()`
+- `WebVideoCtrl.I_InitPlugin()`
+- `WebVideoCtrl.I_InsertOBJECTPlugin()`
+- `WebVideoCtrl.I_Login()`
+- `WebVideoCtrl.I_GetDevicePort()`
+- `WebVideoCtrl.I_GetWindowStatus()`
+- `WebVideoCtrl.I_StartRealPlay()`
+- `WebVideoCtrl.I_Stop()`
+- `WebVideoCtrl.I_Logout()`
+- `WebVideoCtrl.I_StopAll()`
+
+## 当前限制
+
+- 仅实现单路通道实时预览，默认用于 NVR 数字通道 `34`。
+- 当前预览使用直连取流 `bProxy: false`，暂不接入 nginx 代理取流。
+- 原 `webs/cn/demo.js` 未出现明确销毁插件实例的 API，因此 `destroySdk()` 只调用可确认的 `I_StopAll()` 释放取流资源，并保留 TODO。
