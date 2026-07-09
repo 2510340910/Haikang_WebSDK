@@ -1,0 +1,102 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #1f2937;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+}
+
+.page-shell {
+  width: min(1180px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 32px 0;
+}
+
+.preview-card {
+  border-radius: 12px;
+}
+
+.card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.card-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.card-header span {
+  color: #64748b;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.config-form {
+  padding: 8px 0;
+}
+
+.preview-panel {
+  min-width: 0;
+}
+
+#hik-preview-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 560px;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #000;
+  color: #9ca3af;
+}
+
+.preset-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.actions .el-button {
+  margin-left: 0;
+}
+
+.status-box {
+  margin-top: 8px;
+}
+
+.error-text {
+  color: #dc2626;
+}
+
+@media (max-width: 900px) {
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    flex-direction: column;
+  }
+}
