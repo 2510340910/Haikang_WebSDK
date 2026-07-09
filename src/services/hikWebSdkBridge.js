@@ -215,6 +215,32 @@ export function stopPreview() {
   })
 }
 
+export function goPreset(presetId) {
+  const WebVideoCtrl = getWebVideoCtrl()
+  const windowStatus = WebVideoCtrl.I_GetWindowStatus(selectedWindowIndex)
+  const targetPresetId = parseInt(presetId, 10)
+
+  if (!windowStatus) {
+    return Promise.reject(new Error('请先开始预览，再切换预置点'))
+  }
+
+  if (!targetPresetId) {
+    return Promise.reject(new Error('请选择有效的预置点'))
+  }
+
+  return toSdkPromise((resolve, reject) => {
+    WebVideoCtrl.I_GoPreset(targetPresetId, {
+      success: function () {
+        resolve()
+      },
+      error: function (status, xmlDoc) {
+        reject(new Error(`调用预置点失败：${targetPresetId}，状态码：${status || '未知'}`))
+        console.error('[HikWebSdkBridge] I_GoPreset error', { status, xmlDoc, presetId: targetPresetId })
+      }
+    })
+  })
+}
+
 export async function logoutDevice() {
   if (!activeDeviceIdentify) {
     return

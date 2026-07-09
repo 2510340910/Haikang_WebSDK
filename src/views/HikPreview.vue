@@ -38,6 +38,19 @@
               <el-option label="子码流" value="sub" />
             </el-select>
           </el-form-item>
+          <el-form-item v-if="form.ptzEnabled" label="预置点">
+            <div class="preset-control">
+              <el-select v-model="selectedPreset" placeholder="请选择预置点">
+                <el-option
+                  v-for="preset in form.presets"
+                  :key="preset.value"
+                  :label="preset.label"
+                  :value="preset.value"
+                />
+              </el-select>
+              <el-button type="primary" @click="runAction('切换预置点', () => goPreset(selectedPreset))">切换</el-button>
+            </div>
+          </el-form-item>
         </el-form>
 
         <div class="preview-panel">
@@ -67,6 +80,7 @@ import { reactive, ref } from 'vue'
 import { defaultCameraConfig } from '@/config/cameraConfig'
 import {
   destroySdk,
+  goPreset,
   logoutDevice,
   startPreview,
   stopPreview
@@ -74,6 +88,7 @@ import {
 
 const previewContainerId = 'hik-preview-container'
 const form = reactive({ ...defaultCameraConfig })
+const selectedPreset = ref(form.presets?.[0]?.value || '')
 const currentStatus = ref('等待操作')
 const errorMessage = ref('')
 

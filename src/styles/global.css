@@ -65,6 +65,13 @@ body {
   color: #9ca3af;
 }
 
+.preset-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  width: 100%;
+}
+
 .actions {
   display: flex;
   flex-wrap: wrap;
