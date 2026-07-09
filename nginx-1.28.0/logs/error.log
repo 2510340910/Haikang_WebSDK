@@ -703,3 +703,7 @@
 2025/10/30 20:11:47 [error] 34012#32084: *162 CreateFile() "./../webs/cn/vconsole.min.js" failed (2: The system cannot find the file specified), client: 10.15.32.116, server: 127.0.0.1, request: "GET /cn/vconsole.min.js HTTP/1.1", host: "10.15.32.116", referrer: "http://10.15.32.116/cn/demo.html"
 2025/10/30 20:11:47 [error] 34012#32084: *166 CreateFile() "./../webs/favicon.ico" failed (2: The system cannot find the file specified), client: 10.15.32.116, server: 127.0.0.1, request: "GET /favicon.ico HTTP/1.1", host: "10.15.32.116", referrer: "http://10.15.32.116/cn/demo.html"
 2026/07/08 16:03:27 [emerg] 31292#21264: CreateDirectory() "./temp/client_body_temp" failed (3: The system cannot find the path specified)
+2026/07/08 18:34:58 [emerg] 42136#46260: CreateDirectory() "./temp/client_body_temp" failed (3: The system cannot find the path specified)
+2026/07/08 23:00:06 [emerg] 43488#16084: CreateDirectory() "C:\Users\zhj0917\Desktop\Haikang_WebSDK\nginx-1.28.0/temp/client_body_temp" failed (3: The system cannot find the path specified)
+2026/07/08 23:23:32 [notice] 40252#41976: signal process started
+2026/07/08 23:23:32 [error] 40252#41976: OpenEvent("Global\ngx_reload_28568") failed (2: The system cannot find the file specified)

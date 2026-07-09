@@ -53,11 +53,11 @@ body {
 }
 
 #hik-preview-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
   width: 100%;
-  min-height: 360px;
+  height: 420px;
+  min-height: 0;
+  overflow: hidden;
   border-radius: 8px;
   background: #000;
   color: #9ca3af;

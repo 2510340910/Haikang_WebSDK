@@ -9,7 +9,7 @@
       </template>
 
       <el-alert
-        title="当前测试设备为海康 NVR 下挂摄像头，不是直接 IPC 摄像头；当前已知 SDK 数字通道为 34。"
+        title="当前测试设备为海康 NVR 下挂摄像头，不是直接 IPC 摄像头；当前已知 SDK 数字通道为 2。"
         type="info"
         :closable="false"
         show-icon

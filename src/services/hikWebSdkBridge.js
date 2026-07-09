@@ -12,6 +12,7 @@ let sdkLoaded = false
 let sdkInitialized = false
 let activeDeviceIdentify = ''
 let selectedWindowIndex = 0
+let activeDevicePortInfo = null
 
 function getWebVideoCtrl() {
   const webVideoCtrl = window.WebVideoCtrl
@@ -115,6 +116,7 @@ export async function loginDevice(config) {
   const WebVideoCtrl = getWebVideoCtrl()
   const deviceIdentify = getDeviceIdentify(config)
 
+  console.log("Protocol:", getProtocol(config))
   return toSdkPromise((resolve, reject) => {
     const result = WebVideoCtrl.I_Login(
       config.nvrIp,
@@ -127,7 +129,8 @@ export async function loginDevice(config) {
           activeDeviceIdentify = deviceIdentify
 
           if (typeof WebVideoCtrl.I_GetDevicePort === 'function') {
-            WebVideoCtrl.I_GetDevicePort(deviceIdentify)
+            activeDevicePortInfo = WebVideoCtrl.I_GetDevicePort(deviceIdentify)
+            console.log("Device Port:", activeDevicePortInfo)
           }
 
           resolve({ deviceIdentify })
@@ -154,15 +157,18 @@ export async function startPreview(config, containerId = 'hik-preview-container'
   await initSdk(containerId)
 
   const WebVideoCtrl = getWebVideoCtrl()
-  const windowStatus = WebVideoCtrl.I_GetWindowStatus(selectedWindowIndex)
+  console.log("WebVideoCtrl:", WebVideoCtrl)
 
+  const windowStatus = WebVideoCtrl.I_GetWindowStatus(selectedWindowIndex)
+  console.log("Window Status:", windowStatus)
+  console.log("proxyPreview:", Boolean(config.proxyPreview))
   const startRealPlay = () => toSdkPromise((resolve, reject) => {
     WebVideoCtrl.I_StartRealPlay(activeDeviceIdentify, {
-      iRtspPort: Number(config.rtspPort) || undefined,
+      iRtspPort: Number(config.rtspPort) || activeDevicePortInfo?.iRtspPort,
       iStreamType: getStreamType(config.streamType),
       iChannelID: Number(config.channel),
       bZeroChannel: false,
-      bProxy: false,
+      bProxy: Boolean(config.proxyPreview),
       success: function () {
         resolve()
       },
