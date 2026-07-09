@@ -47,6 +47,40 @@ function getStreamType(streamType) {
   return 2
 }
 
+function getXmlText(xmlDoc, tagName, index = 0) {
+  return xmlDoc?.getElementsByTagName(tagName)?.[index]?.textContent || ''
+}
+
+function formatPlaybackTime(value) {
+  return String(value || '').replace('T', ' ').replace('Z', '')
+}
+
+function getPlaybackFileName(playbackURI) {
+  if (!playbackURI || playbackURI.indexOf('name=') < 0 || playbackURI.indexOf('&size=') < 0) {
+    return ''
+  }
+
+  return playbackURI.substring(playbackURI.indexOf('name=') + 5, playbackURI.indexOf('&size='))
+}
+
+function validatePlaybackOptions(options) {
+  const channel = Number(options.channel)
+  const startTime = options.startTime
+  const endTime = options.endTime
+
+  if (!channel) {
+    throw new Error('未选择通道，请先填写有效通道号')
+  }
+
+  if (!startTime || !endTime) {
+    throw new Error('请选择录像回放开始时间和结束时间')
+  }
+
+  if (Date.parse(endTime.replace(/-/g, '/')) - Date.parse(startTime.replace(/-/g, '/')) < 0) {
+    throw new Error('开始时间大于结束时间，请重新选择录像查询时间段')
+  }
+}
+
 function toSdkPromise(executor) {
   return new Promise((resolve, reject) => {
     executor(resolve, reject)
@@ -189,6 +223,159 @@ export async function startPreview(config, containerId = 'hik-preview-container'
   }
 
   return startRealPlay()
+}
+
+export async function searchPlaybackRecords(options) {
+  validatePlaybackOptions(options)
+
+  if (!activeDeviceIdentify) {
+    await loginDevice(options)
+  }
+
+  const WebVideoCtrl = getWebVideoCtrl()
+  const deviceIdentify = activeDeviceIdentify || getDeviceIdentify(options)
+  const records = []
+
+  const searchPage = (searchPos = 0) => toSdkPromise((resolve, reject) => {
+    WebVideoCtrl.I_RecordSearch(deviceIdentify, Number(options.channel), options.startTime, options.endTime, {
+      iStreamType: getStreamType(options.streamType),
+      iSearchPos: searchPos,
+      success: function (xmlDoc) {
+        const statusText = getXmlText(xmlDoc, 'responseStatusStrg')
+        const items = Array.from(xmlDoc?.getElementsByTagName('searchMatchItem') || [])
+
+        for (const item of items) {
+          const playbackURI = getXmlText(item, 'playbackURI')
+          const startTime = formatPlaybackTime(getXmlText(item, 'startTime'))
+          const endTime = formatPlaybackTime(getXmlText(item, 'endTime'))
+          const fileName = getPlaybackFileName(playbackURI)
+
+          if (playbackURI && startTime && endTime) {
+            records.push({
+              index: records.length + 1,
+              fileName,
+              playbackURI,
+              startTime,
+              endTime,
+              recordType: getXmlText(item, 'metadataDescriptor') || getXmlText(item, 'recordType') || '录像文件'
+            })
+          }
+        }
+
+        if (statusText === 'MORE') {
+          searchPage(searchPos + 40).then(resolve).catch(reject)
+          return
+        }
+
+        resolve({ records, statusText })
+      },
+      error: function (status, xmlDoc) {
+        reject(new Error(`WebSDK 回放 API 调用失败：查询录像失败，状态码：${status || '未知'}；请检查 NVR 硬盘、录像计划、查询日期和通道号`))
+        console.error('[HikWebSdkBridge] I_RecordSearch error', { status, xmlDoc })
+      }
+    })
+  })
+
+  const result = await searchPage()
+
+  if (!result.records.length || result.statusText === 'NO MATCHES') {
+    throw new Error('查询无录像：NVR 可能无录像、硬盘异常、未开启录像计划、查询日期无录像或通道号不正确')
+  }
+
+  return result.records
+}
+
+export async function startPlayback(options) {
+  validatePlaybackOptions(options)
+
+  if (!activeDeviceIdentify) {
+    await loginDevice(options)
+  }
+
+  await initSdk()
+
+  const WebVideoCtrl = getWebVideoCtrl()
+  const deviceIdentify = activeDeviceIdentify || getDeviceIdentify(options)
+  const windowStatus = WebVideoCtrl.I_GetWindowStatus(selectedWindowIndex)
+
+  const runStartPlayback = () => toSdkPromise((resolve, reject) => {
+    WebVideoCtrl.I_StartPlayback(deviceIdentify, {
+      iRtspPort: Number(options.rtspPort) || undefined,
+      iStreamType: getStreamType(options.streamType),
+      iChannelID: Number(options.channel),
+      szStartTime: options.startTime,
+      szEndTime: options.endTime,
+      bProxy: Boolean(options.proxyPlayback),
+      success: function () {
+        resolve()
+      },
+      error: function (status, xmlDoc) {
+        const message = status === 403 ? '设备不支持 Websocket 取流' : 'WebSDK 回放 API 调用失败：开始回放失败'
+        reject(new Error(`${message}，状态码：${status || '未知'}`))
+        console.error('[HikWebSdkBridge] I_StartPlayback error', { status, xmlDoc })
+      }
+    })
+  })
+
+  if (windowStatus) {
+    await stopPreview()
+  }
+
+  return runStartPlayback()
+}
+
+export function stopPlayback() {
+  return stopPreview()
+}
+
+export function pausePlayback() {
+  const WebVideoCtrl = getWebVideoCtrl()
+
+  return toSdkPromise((resolve, reject) => {
+    WebVideoCtrl.I_Pause({
+      success: function () {
+        resolve()
+      },
+      error: function () {
+        reject(new Error('WebSDK 回放 API 调用失败：暂停回放失败'))
+      }
+    })
+  })
+}
+
+export function resumePlayback() {
+  const WebVideoCtrl = getWebVideoCtrl()
+
+  return toSdkPromise((resolve, reject) => {
+    WebVideoCtrl.I_Resume({
+      success: function () {
+        resolve()
+      },
+      error: function () {
+        reject(new Error('WebSDK 回放 API 调用失败：恢复回放失败'))
+      }
+    })
+  })
+}
+
+export function setPlaybackSpeed(speed) {
+  const WebVideoCtrl = getWebVideoCtrl()
+  const apiName = speed === 'slow' ? 'I_PlaySlow' : speed === 'fast' ? 'I_PlayFast' : ''
+
+  if (!apiName) {
+    return Promise.reject(new Error('待根据原 demo 确认回放 API：仅确认慢放 I_PlaySlow 和快放 I_PlayFast'))
+  }
+
+  return toSdkPromise((resolve, reject) => {
+    WebVideoCtrl[apiName]({
+      success: function () {
+        resolve()
+      },
+      error: function () {
+        reject(new Error(`WebSDK 回放 API 调用失败：${speed === 'slow' ? '慢放' : '快放'}失败`))
+      }
+    })
+  })
 }
 
 export function stopPreview() {

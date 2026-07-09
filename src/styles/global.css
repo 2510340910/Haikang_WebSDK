@@ -83,6 +83,39 @@ body {
   margin-left: 0;
 }
 
+.mode-tabs {
+  margin-top: 24px;
+}
+
+.playback-panel {
+  padding-top: 8px;
+}
+
+.playback-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 12px 24px;
+}
+
+.playback-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.playback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.playback-actions .el-button {
+  margin-left: 0;
+}
+
+.playback-table {
+  margin-top: 12px;
+}
+
 .status-box {
   margin-top: 8px;
 }
@@ -92,7 +125,8 @@ body {
 }
 
 @media (max-width: 900px) {
-  .content-grid {
+  .content-grid,
+  .playback-form {
     grid-template-columns: 1fr;
   }
 
