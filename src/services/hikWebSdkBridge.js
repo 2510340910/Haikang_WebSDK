@@ -12,13 +12,16 @@ let sdkLoaded = false
 let sdkInitialized = false
 let activeDeviceIdentify = ''
 let selectedWindowIndex = 0
-let activeDevicePortInfo = null
+
+function hasWebVideoCtrl() {
+  return Boolean(window.WebVideoCtrl)
+}
 
 function getWebVideoCtrl() {
   const webVideoCtrl = window.WebVideoCtrl
 
   if (!webVideoCtrl) {
-    throw new Error('WebVideoCtrl 未加载，请先点击“加载 SDK”')
+    throw new Error('WebVideoCtrl 未加载，请点击“开始预览”自动加载 SDK')
   }
 
   return webVideoCtrl
@@ -87,6 +90,12 @@ export async function initSdk(containerId = 'hik-preview-container') {
         selectedWindowIndex = parseInt(selectedWindow || '0', 10)
       },
       cbInitPluginComplete: function () {
+        const container = document.getElementById(containerId)
+
+        if (container) {
+          container.innerHTML = ''
+        }
+
         const insertResult = WebVideoCtrl.I_InsertOBJECTPlugin(containerId)
 
         if (insertResult === -1) {
@@ -116,7 +125,6 @@ export async function loginDevice(config) {
   const WebVideoCtrl = getWebVideoCtrl()
   const deviceIdentify = getDeviceIdentify(config)
 
-  console.log("Protocol:", getProtocol(config))
   return toSdkPromise((resolve, reject) => {
     const result = WebVideoCtrl.I_Login(
       config.nvrIp,
@@ -129,8 +137,7 @@ export async function loginDevice(config) {
           activeDeviceIdentify = deviceIdentify
 
           if (typeof WebVideoCtrl.I_GetDevicePort === 'function') {
-            activeDevicePortInfo = WebVideoCtrl.I_GetDevicePort(deviceIdentify)
-            console.log("Device Port:", activeDevicePortInfo)
+            WebVideoCtrl.I_GetDevicePort(deviceIdentify)
           }
 
           resolve({ deviceIdentify })
@@ -157,14 +164,11 @@ export async function startPreview(config, containerId = 'hik-preview-container'
   await initSdk(containerId)
 
   const WebVideoCtrl = getWebVideoCtrl()
-  console.log("WebVideoCtrl:", WebVideoCtrl)
-
   const windowStatus = WebVideoCtrl.I_GetWindowStatus(selectedWindowIndex)
-  console.log("Window Status:", windowStatus)
-  console.log("proxyPreview:", Boolean(config.proxyPreview))
+
   const startRealPlay = () => toSdkPromise((resolve, reject) => {
     WebVideoCtrl.I_StartRealPlay(activeDeviceIdentify, {
-      iRtspPort: Number(config.rtspPort) || activeDevicePortInfo?.iRtspPort,
+      iRtspPort: Number(config.rtspPort) || undefined,
       iStreamType: getStreamType(config.streamType),
       iChannelID: Number(config.channel),
       bZeroChannel: false,
@@ -188,6 +192,10 @@ export async function startPreview(config, containerId = 'hik-preview-container'
 }
 
 export function stopPreview() {
+  if (!hasWebVideoCtrl()) {
+    return Promise.resolve()
+  }
+
   const WebVideoCtrl = getWebVideoCtrl()
   const windowStatus = WebVideoCtrl.I_GetWindowStatus(selectedWindowIndex)
 
@@ -212,6 +220,11 @@ export async function logoutDevice() {
     return
   }
 
+  if (!hasWebVideoCtrl()) {
+    activeDeviceIdentify = ''
+    return
+  }
+
   const WebVideoCtrl = getWebVideoCtrl()
 
   await stopPreview()
@@ -226,6 +239,12 @@ export async function logoutDevice() {
 }
 
 export async function destroySdk() {
+  if (!hasWebVideoCtrl()) {
+    activeDeviceIdentify = ''
+    selectedWindowIndex = 0
+    return
+  }
+
   const WebVideoCtrl = getWebVideoCtrl()
 
   if (typeof WebVideoCtrl.I_StopAll === 'function') {
@@ -233,7 +252,7 @@ export async function destroySdk() {
   }
 
   // TODO: 原 webs/cn/demo.js 未出现销毁插件实例的 API；这里只按原 Demo 可确认的 I_StopAll 释放取流资源。
-  sdkInitialized = false
+  // 不重置 sdkInitialized，避免下一次预览重复插入播放窗口导致页面被多个窗口撑高。
   activeDeviceIdentify = ''
   selectedWindowIndex = 0
 }

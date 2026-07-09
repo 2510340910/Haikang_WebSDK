@@ -53,9 +53,11 @@ body {
 }
 
 #hik-preview-container {
-  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  height: 420px;
+  height: 560px;
   min-height: 0;
   overflow: hidden;
   border-radius: 8px;

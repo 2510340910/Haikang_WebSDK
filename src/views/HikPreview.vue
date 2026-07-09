@@ -9,7 +9,7 @@
       </template>
 
       <el-alert
-        title="当前测试设备为海康 NVR 下挂摄像头，不是直接 IPC 摄像头；当前已知 SDK 数字通道为 2。"
+        title="当前测试设备为海康 NVR 下挂摄像头，不是直接 IPC 摄像头；当前已验证 SDK 数字通道为 2。"
         type="info"
         :closable="false"
         show-icon
@@ -48,12 +48,8 @@
       </section>
 
       <section class="actions">
-        <el-button type="primary" @click="runAction('加载 SDK', loadSdkResources)">加载 SDK</el-button>
-        <el-button @click="runAction('初始化 SDK', () => initSdk(previewContainerId))">初始化 SDK</el-button>
-        <el-button @click="runAction('登录设备', () => loginDevice(form))">登录设备</el-button>
         <el-button type="success" @click="runAction('开始预览', () => startPreview(form, previewContainerId))">开始预览</el-button>
-        <el-button type="warning" @click="runAction('停止预览', stopPreview)">停止预览</el-button>
-        <el-button type="danger" @click="releaseResources">释放资源</el-button>
+        <el-button type="warning" @click="stopAndReleasePreview">停止预览</el-button>
       </section>
 
       <el-descriptions :column="1" border class="status-box">
@@ -71,9 +67,6 @@ import { reactive, ref } from 'vue'
 import { defaultCameraConfig } from '@/config/cameraConfig'
 import {
   destroySdk,
-  initSdk,
-  loadSdkResources,
-  loginDevice,
   logoutDevice,
   startPreview,
   stopPreview
@@ -96,8 +89,8 @@ async function runAction(label, action) {
   }
 }
 
-async function releaseResources() {
-  await runAction('释放资源', async () => {
+async function stopAndReleasePreview() {
+  await runAction('停止预览', async () => {
     await stopPreview()
     await logoutDevice()
     await destroySdk()

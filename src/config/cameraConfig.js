@@ -1,5 +1,5 @@
 export const defaultCameraConfig = {
-  name: '测试摄像头-34通道',
+  name: '测试摄像头-2通道',
   plantName: '测试污水厂',
   areaName: '测试区域',
 
