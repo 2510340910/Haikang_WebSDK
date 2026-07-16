@@ -1,0 +1,187 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #f4f6f8;
+  color: #1f2937;
+  font-family: Arial, "Microsoft YaHei", sans-serif;
+}
+
+.page-shell {
+  width: min(1180px, calc(100vw - 32px));
+  margin: 0 auto;
+  padding: 32px 0;
+}
+
+.preview-card {
+  border-radius: 12px;
+}
+
+.card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.card-header h1 {
+  margin: 0;
+  font-size: 24px;
+}
+
+.card-header span {
+  color: #64748b;
+}
+
+.content-grid {
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.config-form {
+  padding: 8px 0;
+}
+
+.preview-panel {
+  min-width: 0;
+}
+
+#hik-preview-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 560px;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #000;
+  color: #9ca3af;
+}
+
+.preset-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 24px 0;
+}
+
+.actions .el-button {
+  margin-left: 0;
+}
+
+.mode-tabs {
+  margin-top: 24px;
+}
+
+.ptz-panel {
+  margin-top: 12px;
+  padding: 16px;
+  border: 1px solid #d8e0ea;
+  border-radius: 8px;
+  background: #fbfdff;
+}
+
+.ptz-panel h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.ptz-grid {
+  display: grid;
+  grid-template-columns: 290px 240px 260px;
+  gap: 16px;
+  align-items: start;
+}
+
+.ptz-directions,
+.ptz-lens {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.ptz-lens {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.ptz-settings {
+  display: grid;
+  grid-template-columns: 88px 1fr;
+  gap: 8px;
+  align-items: center;
+}
+
+.ptz-hint {
+  grid-column: 1 / -1;
+  color: #64748b;
+  font-size: 13px;
+}
+
+.ptz-settings .el-button,
+.ptz-directions .el-button,
+.ptz-lens .el-button {
+  margin-left: 0;
+}
+
+.playback-panel {
+  padding-top: 8px;
+}
+
+.playback-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(260px, 1fr));
+  gap: 12px 24px;
+}
+
+.playback-form .el-form-item {
+  margin-bottom: 0;
+}
+
+.playback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.playback-actions .el-button {
+  margin-left: 0;
+}
+
+.playback-table {
+  margin-top: 12px;
+}
+
+.status-box {
+  margin-top: 8px;
+}
+
+.error-text {
+  color: #dc2626;
+}
+
+@media (max-width: 900px) {
+  .content-grid,
+  .playback-form,
+  .ptz-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .card-header {
+    flex-direction: column;
+  }
+}
