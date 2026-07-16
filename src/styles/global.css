@@ -87,7 +87,6 @@ body {
   margin-top: 24px;
 }
 
-
 .ptz-panel {
   margin-top: 12px;
   padding: 16px;
@@ -124,6 +123,12 @@ body {
   grid-template-columns: 88px 1fr;
   gap: 8px;
   align-items: center;
+}
+
+.ptz-hint {
+  grid-column: 1 / -1;
+  color: #64748b;
+  font-size: 13px;
 }
 
 .ptz-settings .el-button,

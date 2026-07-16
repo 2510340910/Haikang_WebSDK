@@ -66,7 +66,6 @@
             <el-button type="success" @click="runAction('开始预览', () => startPreview(form, previewContainerId))">开始预览</el-button>
             <el-button type="warning" @click="stopAndReleasePreview">停止预览</el-button>
             <el-button @click="runAction('抓图 JPG', () => capturePicture(form, 'jpg'))">抓图 JPG</el-button>
-            <el-button @click="runAction('抓图 BMP', () => capturePicture(form, 'bmp'))">抓图 BMP</el-button>
           </section>
 
           <section class="ptz-panel" v-if="form.ptzEnabled">
@@ -89,10 +88,7 @@
                 <el-select v-model="ptzSpeed">
                   <el-option v-for="speed in 7" :key="speed" :label="speed" :value="speed" />
                 </el-select>
-                <label>预置点号</label>
-                <el-input-number v-model="presetNumber" :min="1" :max="255" />
-                <el-button @click="runAction('设置预置点', () => setPreset(presetNumber))">设置预置</el-button>
-                <el-button @click="runAction('调用预置点', () => goPreset(presetNumber))">调用预置</el-button>
+                <span class="ptz-hint">预置点切换请使用左侧配置表单中的下拉框。</span>
               </div>
 
               <div class="ptz-lens">
@@ -133,7 +129,6 @@
               <el-button type="success" @click="playSelectedTimeRange">开始回放</el-button>
               <el-button type="warning" @click="runAction('停止回放', stopPlayback)">停止回放</el-button>
               <el-button @click="runAction('回放抓图 JPG', () => capturePicture(form, 'jpg'))">抓图 JPG</el-button>
-              <el-button @click="runAction('回放抓图 BMP', () => capturePicture(form, 'bmp'))">抓图 BMP</el-button>
               <el-button @click="downloadSelectedRecord">下载片段</el-button>
               <el-button @click="downloadSelectedRecordByTime">按时间下载</el-button>
               <el-button @click="runAction('暂停回放', pausePlayback)">暂停</el-button>
@@ -186,7 +181,6 @@ import {
   resumePlayback,
   searchPlaybackRecords,
   setPlaybackSpeed,
-  setPreset,
   startPlayback,
   startPreview,
   startPtzControl,
@@ -203,7 +197,6 @@ const playbackForm = reactive(createDefaultPlaybackTimeRange())
 const playbackRecords = ref([])
 const selectedPlaybackRecord = ref(null)
 const ptzSpeed = ref(4)
-const presetNumber = ref(selectedPreset.value || 1)
 const currentStatus = ref('等待操作')
 const errorMessage = ref('')
 
