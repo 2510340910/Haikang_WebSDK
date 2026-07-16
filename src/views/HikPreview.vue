@@ -65,6 +65,45 @@
           <section class="actions">
             <el-button type="success" @click="runAction('开始预览', () => startPreview(form, previewContainerId))">开始预览</el-button>
             <el-button type="warning" @click="stopAndReleasePreview">停止预览</el-button>
+            <el-button @click="runAction('抓图 JPG', () => capturePicture(form, 'jpg'))">抓图 JPG</el-button>
+            <el-button @click="runAction('抓图 BMP', () => capturePicture(form, 'bmp'))">抓图 BMP</el-button>
+          </section>
+
+          <section class="ptz-panel" v-if="form.ptzEnabled">
+            <h2>云台控制</h2>
+            <div class="ptz-grid">
+              <div class="ptz-directions">
+                <el-button @mousedown="handlePtzStart(5)" @mouseup="handlePtzStop(1)" @mouseleave="handlePtzStop(1)">左上</el-button>
+                <el-button @mousedown="handlePtzStart(1)" @mouseup="handlePtzStop(1)" @mouseleave="handlePtzStop(1)">上</el-button>
+                <el-button @mousedown="handlePtzStart(7)" @mouseup="handlePtzStop(1)" @mouseleave="handlePtzStop(1)">右上</el-button>
+                <el-button @mousedown="handlePtzStart(3)" @mouseup="handlePtzStop(1)" @mouseleave="handlePtzStop(1)">左</el-button>
+                <el-button @click="runAction('自动云台', () => startPtzControl(9, ptzSpeed))">自动</el-button>
+                <el-button @mousedown="handlePtzStart(4)" @mouseup="handlePtzStop(1)" @mouseleave="handlePtzStop(1)">右</el-button>
+                <el-button @mousedown="handlePtzStart(6)" @mouseup="handlePtzStop(1)" @mouseleave="handlePtzStop(1)">左下</el-button>
+                <el-button @mousedown="handlePtzStart(2)" @mouseup="handlePtzStop(1)" @mouseleave="handlePtzStop(1)">下</el-button>
+                <el-button @mousedown="handlePtzStart(8)" @mouseup="handlePtzStop(1)" @mouseleave="handlePtzStop(1)">右下</el-button>
+              </div>
+
+              <div class="ptz-settings">
+                <label>云台速度</label>
+                <el-select v-model="ptzSpeed">
+                  <el-option v-for="speed in 7" :key="speed" :label="speed" :value="speed" />
+                </el-select>
+                <label>预置点号</label>
+                <el-input-number v-model="presetNumber" :min="1" :max="255" />
+                <el-button @click="runAction('设置预置点', () => setPreset(presetNumber))">设置预置</el-button>
+                <el-button @click="runAction('调用预置点', () => goPreset(presetNumber))">调用预置</el-button>
+              </div>
+
+              <div class="ptz-lens">
+                <el-button @mousedown="handlePtzStart(10)" @mouseup="handlePtzStop(11)" @mouseleave="handlePtzStop(11)">变倍+</el-button>
+                <el-button @mousedown="handlePtzStart(11)" @mouseup="handlePtzStop(11)" @mouseleave="handlePtzStop(11)">变倍-</el-button>
+                <el-button @mousedown="handlePtzStart(12)" @mouseup="handlePtzStop(12)" @mouseleave="handlePtzStop(12)">变焦+</el-button>
+                <el-button @mousedown="handlePtzStart(13)" @mouseup="handlePtzStop(12)" @mouseleave="handlePtzStop(12)">变焦-</el-button>
+                <el-button @mousedown="handlePtzStart(14)" @mouseup="handlePtzStop(14)" @mouseleave="handlePtzStop(14)">光圈+</el-button>
+                <el-button @mousedown="handlePtzStart(15)" @mouseup="handlePtzStop(14)" @mouseleave="handlePtzStop(14)">光圈-</el-button>
+              </div>
+            </div>
           </section>
         </el-tab-pane>
 
@@ -93,6 +132,10 @@
               <el-button type="primary" @click="queryPlaybackRecords">查询录像</el-button>
               <el-button type="success" @click="playSelectedTimeRange">开始回放</el-button>
               <el-button type="warning" @click="runAction('停止回放', stopPlayback)">停止回放</el-button>
+              <el-button @click="runAction('回放抓图 JPG', () => capturePicture(form, 'jpg'))">抓图 JPG</el-button>
+              <el-button @click="runAction('回放抓图 BMP', () => capturePicture(form, 'bmp'))">抓图 BMP</el-button>
+              <el-button @click="downloadSelectedRecord">下载片段</el-button>
+              <el-button @click="downloadSelectedRecordByTime">按时间下载</el-button>
               <el-button @click="runAction('暂停回放', pausePlayback)">暂停</el-button>
               <el-button @click="runAction('恢复回放', resumePlayback)">恢复</el-button>
               <el-button @click="runAction('慢放', () => setPlaybackSpeed('slow'))">慢放</el-button>
@@ -105,6 +148,7 @@
               border
               size="small"
               class="playback-table"
+              highlight-current-row
               @row-click="selectPlaybackRecord"
             >
               <el-table-column prop="index" label="#" width="64" />
@@ -132,17 +176,23 @@
 import { reactive, ref } from 'vue'
 import { defaultCameraConfig } from '@/config/cameraConfig'
 import {
+  capturePicture,
   destroySdk,
+  downloadPlaybackRecord,
+  downloadPlaybackRecordByTime,
   goPreset,
   logoutDevice,
   pausePlayback,
   resumePlayback,
   searchPlaybackRecords,
   setPlaybackSpeed,
+  setPreset,
   startPlayback,
   startPreview,
+  startPtzControl,
   stopPlayback,
-  stopPreview
+  stopPreview,
+  stopPtzControl
 } from '@/services/hikWebSdkBridge'
 
 const previewContainerId = 'hik-preview-container'
@@ -151,6 +201,9 @@ const selectedPreset = ref(form.presets?.[0]?.value || '')
 const activeMode = ref('preview')
 const playbackForm = reactive(createDefaultPlaybackTimeRange())
 const playbackRecords = ref([])
+const selectedPlaybackRecord = ref(null)
+const ptzSpeed = ref(4)
+const presetNumber = ref(selectedPreset.value || 1)
 const currentStatus = ref('等待操作')
 const errorMessage = ref('')
 
@@ -203,12 +256,14 @@ async function runAction(label, action) {
 
 async function queryPlaybackRecords() {
   await runAction('查询录像', async () => {
+    selectedPlaybackRecord.value = null
     playbackRecords.value = await searchPlaybackRecords(getPlaybackOptions())
     currentStatus.value = `录像查询成功，共 ${playbackRecords.value.length} 段`
   })
 }
 
 function selectPlaybackRecord(record) {
+  selectedPlaybackRecord.value = record
   playbackForm.startTime = record.startTime
   playbackForm.endTime = record.endTime
   currentStatus.value = `已选择录像片段 ${record.startTime} 至 ${record.endTime}`
@@ -220,6 +275,27 @@ async function playSelectedTimeRange() {
     await startPlayback(getPlaybackOptions())
     currentStatus.value = `正在回放 ${playbackForm.startTime} 至 ${playbackForm.endTime}`
   })
+}
+
+async function handlePtzStart(ptzIndex) {
+  await runAction('云台控制', () => startPtzControl(ptzIndex, ptzSpeed.value))
+}
+
+async function handlePtzStop(ptzIndex) {
+  try {
+    await stopPtzControl(ptzIndex)
+  } catch (error) {
+    currentStatus.value = '停止云台失败'
+    errorMessage.value = error?.message || String(error)
+  }
+}
+
+async function downloadSelectedRecord() {
+  await runAction('下载录像片段', () => downloadPlaybackRecord(selectedPlaybackRecord.value, getPlaybackOptions()))
+}
+
+async function downloadSelectedRecordByTime() {
+  await runAction('按时间下载录像', () => downloadPlaybackRecordByTime(selectedPlaybackRecord.value, getPlaybackOptions()))
 }
 
 async function stopAndReleasePreview() {

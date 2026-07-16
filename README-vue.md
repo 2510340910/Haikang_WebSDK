@@ -5,7 +5,7 @@
 - 原始海康 WebSDK Demo 使用 `nginx-1.28.0` 作为本地静态服务。
 - 当前新增的是 Vue3 + Vite 壳工程，用于后续逐步迁移 WebSDK Demo。
 - 当前阶段已迁移原 `webs/cn/demo.js` 中可确认的最小实时预览链路：SDK 加载、SDK 初始化、登录 NVR、单路实时预览、停止预览、注销/释放、录像查询和按时间段回放。页面只保留“开始预览”和“停止预览”，其中“开始预览”会自动串联加载 SDK、初始化 SDK 和登录设备，“停止预览”会配套执行停止、注销和释放。
-- 当前已迁移云台预置点调用能力，以及 NVR 存储录像的查询、开始回放和停止回放；暂未迁移方向控制、变倍、变焦、光圈、录像下载、抓图、OSD、设备维护等高级能力。
+- 当前已迁移云台方向控制、自动巡航、预置点设置/调用、变倍、变焦、光圈、实时预览/回放抓图、NVR 存储录像查询、开始回放、停止回放和录像下载；暂未迁移录像剪辑、OSD、设备维护等高级能力。
 - 当前测试设备是 NVR 下挂摄像头，已验证数字通道为 `2`，不是 IPC 直连。
 
 ## 启动方式
@@ -38,6 +38,11 @@ http://localhost:5173
 - `WebVideoCtrl.I_StartRealPlay()`
 - `WebVideoCtrl.I_RecordSearch()`
 - `WebVideoCtrl.I_StartPlayback()`
+- `WebVideoCtrl.I_PTZControl()`
+- `WebVideoCtrl.I_SetPreset()`
+- `WebVideoCtrl.I2_CapturePic()`
+- `WebVideoCtrl.I_StartDownloadRecord()`
+- `WebVideoCtrl.I_StartDownloadRecordByTime()`
 - `WebVideoCtrl.I_Stop()`
 - `WebVideoCtrl.I_Pause()`
 - `WebVideoCtrl.I_Resume()`
@@ -50,7 +55,7 @@ http://localhost:5173
 ## 当前限制
 
 - 仅实现单路通道实时预览，默认用于 NVR 数字通道 `2`。
-- 云台功能目前只支持调用预置点，预置点列表来自 `src/config/cameraConfig.js` 的 `presets` 配置。
+- 云台功能支持方向、自动、预置点设置/调用、变倍、变焦和光圈控制；预置点列表来自 `src/config/cameraConfig.js` 的 `presets` 配置。
 - 当前默认预览使用直连取流 `proxyPreview: false`，如后续切换 nginx 代理取流，再将配置改为 `proxyPreview: true` 并补充对应 nginx 代理规则。
 - 原 `webs/cn/demo.js` 未出现明确销毁插件实例的 API，因此 `destroySdk()` 只调用可确认的 `I_StopAll()` 释放取流资源，并保留 TODO。
 
@@ -73,6 +78,7 @@ npm run dev
 3. 点击“查询录像”。
 4. 如果返回录像片段，可点击片段自动填充回放时间段。
 5. 点击“开始回放”进行按时间段回放，点击“停止回放”停止当前回放。
+6. 需要保存证据时，可在实时预览或录像回放窗口点击“抓图 JPG/BMP”；需要导出录像时，先选择录像片段，再点击“下载片段”或“按时间下载”。
 
 如果提示无录像，请优先检查：
 

@@ -12,6 +12,7 @@ let sdkLoaded = false
 let sdkInitialized = false
 let activeDeviceIdentify = ''
 let selectedWindowIndex = 0
+let ptzAutoRunning = false
 
 function hasWebVideoCtrl() {
   return Boolean(window.WebVideoCtrl)
@@ -79,6 +80,28 @@ function validatePlaybackOptions(options) {
   if (Date.parse(endTime.replace(/-/g, '/')) - Date.parse(startTime.replace(/-/g, '/')) < 0) {
     throw new Error('开始时间大于结束时间，请重新选择录像查询时间段')
   }
+}
+
+function getActiveWindowStatus(actionName = '操作') {
+  const WebVideoCtrl = getWebVideoCtrl()
+  const windowStatus = WebVideoCtrl.I_GetWindowStatus(selectedWindowIndex)
+
+  if (!windowStatus) {
+    throw new Error(`请先开始预览或回放，再执行${actionName}`)
+  }
+
+  return { WebVideoCtrl, windowStatus }
+}
+
+function getSafeFilePart(value) {
+  return String(value || '')
+    .replace(/[\\/:*?"<>|]/g, '_')
+    .replace(/\s+/g, '_')
+}
+
+function getTimestampFileName(options, suffix) {
+  const channel = Number(options?.channel) || 'channel'
+  return `${activeDeviceIdentify || 'hikvision'}_${channel}_${Date.now()}${suffix}`
 }
 
 function toSdkPromise(executor) {
@@ -400,6 +423,131 @@ export function stopPreview() {
       }
     })
   })
+}
+
+export function startPtzControl(ptzIndex, speed = 4) {
+  const { WebVideoCtrl } = getActiveWindowStatus('云台控制')
+  let ptzSpeed = Number(speed) || 4
+  const targetPtzIndex = Number(ptzIndex)
+
+  if (targetPtzIndex === 9 && ptzAutoRunning) {
+    ptzSpeed = 0
+  } else if (targetPtzIndex !== 9) {
+    ptzAutoRunning = false
+  }
+
+  return toSdkPromise((resolve, reject) => {
+    WebVideoCtrl.I_PTZControl(targetPtzIndex, false, {
+      iPTZSpeed: ptzSpeed,
+      success: function () {
+        if (targetPtzIndex === 9) {
+          ptzAutoRunning = !ptzAutoRunning
+        }
+        resolve()
+      },
+      error: function (status, xmlDoc) {
+        reject(new Error(`云台控制失败：${targetPtzIndex}，状态码：${status || '未知'}`))
+        console.error('[HikWebSdkBridge] I_PTZControl start error', { status, xmlDoc, ptzIndex: targetPtzIndex })
+      }
+    })
+  })
+}
+
+export function stopPtzControl(ptzIndex = 1) {
+  const { WebVideoCtrl } = getActiveWindowStatus('停止云台')
+  const targetPtzIndex = Number(ptzIndex) || 1
+
+  return toSdkPromise((resolve, reject) => {
+    WebVideoCtrl.I_PTZControl(targetPtzIndex, true, {
+      success: function () {
+        resolve()
+      },
+      error: function (status, xmlDoc) {
+        reject(new Error(`停止云台失败：${targetPtzIndex}，状态码：${status || '未知'}`))
+        console.error('[HikWebSdkBridge] I_PTZControl stop error', { status, xmlDoc, ptzIndex: targetPtzIndex })
+      }
+    })
+  })
+}
+
+export function setPreset(presetId) {
+  const { WebVideoCtrl } = getActiveWindowStatus('设置预置点')
+  const targetPresetId = parseInt(presetId, 10)
+
+  if (!targetPresetId) {
+    return Promise.reject(new Error('请选择有效的预置点'))
+  }
+
+  return toSdkPromise((resolve, reject) => {
+    WebVideoCtrl.I_SetPreset(targetPresetId, {
+      success: function () {
+        resolve()
+      },
+      error: function (status, xmlDoc) {
+        reject(new Error(`设置预置点失败：${targetPresetId}，状态码：${status || '未知'}`))
+        console.error('[HikWebSdkBridge] I_SetPreset error', { status, xmlDoc, presetId: targetPresetId })
+      }
+    })
+  })
+}
+
+export function capturePicture(options = {}, type = 'jpg') {
+  const { WebVideoCtrl } = getActiveWindowStatus('抓图')
+  const suffix = type === 'bmp' ? '.bmp' : '.jpg'
+  const fileName = getTimestampFileName(options, suffix)
+
+  if (typeof WebVideoCtrl.I2_CapturePic !== 'function') {
+    return Promise.reject(new Error('待根据原 demo 确认抓图 API：当前 WebSDK 未提供 I2_CapturePic'))
+  }
+
+  return WebVideoCtrl.I2_CapturePic(fileName, {})
+}
+
+export function downloadPlaybackRecord(record, options = {}) {
+  const WebVideoCtrl = getWebVideoCtrl()
+  const playbackURI = record?.playbackURI
+
+  if (!activeDeviceIdentify) {
+    return Promise.reject(new Error('未登录设备，无法下载录像'))
+  }
+
+  if (!playbackURI) {
+    return Promise.reject(new Error('请选择包含 playbackURI 的录像片段后再下载'))
+  }
+
+  const channel = Number(options.channel) || 'channel'
+  const fileName = getSafeFilePart(record.fileName || `record_${record.index || Date.now()}`)
+
+  return WebVideoCtrl.I_StartDownloadRecord(activeDeviceIdentify, playbackURI, `${activeDeviceIdentify}_${channel}_${fileName}`, {
+    bDateDir: true
+  })
+}
+
+export function downloadPlaybackRecordByTime(record, options = {}) {
+  validatePlaybackOptions(options)
+
+  const WebVideoCtrl = getWebVideoCtrl()
+  const playbackURI = record?.playbackURI
+
+  if (!activeDeviceIdentify) {
+    return Promise.reject(new Error('未登录设备，无法按时间下载录像'))
+  }
+
+  if (!playbackURI) {
+    return Promise.reject(new Error('请先查询并选择录像片段，再按时间下载'))
+  }
+
+  const channel = Number(options.channel) || 'channel'
+  const fileName = getSafeFilePart(record.fileName || `record_${Date.now()}`)
+
+  return WebVideoCtrl.I_StartDownloadRecordByTime(
+    activeDeviceIdentify,
+    playbackURI,
+    `${activeDeviceIdentify}_${channel}_${fileName}`,
+    options.startTime,
+    options.endTime,
+    { bDateDir: true }
+  )
 }
 
 export function goPreset(presetId) {

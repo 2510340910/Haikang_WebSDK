@@ -25,6 +25,7 @@ export const defaultCameraConfig = {
 
   // 当前环境建议先走代理取流
   proxyPreview: false,
+  proxyPlayback: false,
 
   ptzEnabled: true,
   presets: [
